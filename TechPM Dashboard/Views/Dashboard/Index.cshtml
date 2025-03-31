@@ -1,0 +1,444 @@
+﻿@model TechPMDashboard.ViewModels.DashboardViewModel
+@using TechPMDashboard.Models  
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Project Dashboard</h2>
+    <!-- Removed "New Project" button -->
+</div>
+
+<!-- Project Overview Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">@Model.ActiveProjectsCount</h5>
+                <p class="card-text text-muted">Active Projects</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">@Model.PendingTasksCount</h5>
+                <p class="card-text text-muted">Pending Tasks</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">@Model.TeamMembersCount</h5>
+                <p class="card-text text-muted">Team Members</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">@Model.HighPriorityRisksCount</h5>
+                <p class="card-text text-muted">High Priority Risks</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Progress -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Project Progress</span>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown">
+                        All Projects
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        @foreach (var project in Model.Projects)
+                        {
+                            <li><a class="dropdown-item" href="#">@project.Name</a></li>
+                        }
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                @foreach (var project in Model.Projects)
+                {
+                    <div class="project-item mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <div>
+                                @if (project.Status == ProjectStatus.OnTrack)
+                                {
+                                    <span class="status-dot status-on-track"></span>
+                                }
+                                else if (project.Status == ProjectStatus.AtRisk)
+                                {
+                                    <span class="status-dot status-at-risk"></span>
+                                }
+                                else
+                                {
+                                    <span class="status-dot status-delayed"></span>
+                                }
+                                <span>@project.Name</span>
+                            </div>
+                            <span>@project.ProgressPercentage%</span>
+                        </div>
+                        <div class="progress">
+                            @if (project.Status == ProjectStatus.OnTrack)
+                            {
+                                <div class="progress-bar bg-success" style="width: @(project.ProgressPercentage)%"></div>
+                            }
+                            else if (project.Status == ProjectStatus.AtRisk)
+                            {
+                                <div class="progress-bar bg-warning" style="width: @(project.ProgressPercentage)%"></div>
+                            }
+                            else
+                            {
+                                <div class="progress-bar bg-danger" style="width: @(project.ProgressPercentage)%"></div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <span>Project Status Overview</span>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Task Management -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Recent Tasks</span>
+                <!-- Removed "View All" link -->
+            </div>
+            <div class="card-body p-3">
+                @foreach (var task in Model.RecentTasks)
+                {
+                    <div class="task-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>@task.Name</span>
+                            <div class="dropdown">
+                                <button class="badge dropdown-toggle @(task.Status == TechPMDashboard.Models.TaskStatus.InProgress ? "bg-warning" : 
+                                                                  task.Status == TechPMDashboard.Models.TaskStatus.Delayed ? "bg-danger" : 
+                                                                  task.Status == TechPMDashboard.Models.TaskStatus.Completed ? "bg-success" : "bg-primary")" 
+                                        type="button" data-bs-toggle="dropdown">
+                                    @(task.Status == TechPMDashboard.Models.TaskStatus.InProgress ? "In Progress" : 
+                                      task.Status == TechPMDashboard.Models.TaskStatus.Delayed ? "Delayed" : 
+                                      task.Status == TechPMDashboard.Models.TaskStatus.Completed ? "Completed" : "Upcoming")
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="updateTaskStatus(@task.Id, 0)">Upcoming</a></li>
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="updateTaskStatus(@task.Id, 1)">In Progress</a></li>
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="updateTaskStatus(@task.Id, 2)">Completed</a></li>
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="updateTaskStatus(@task.Id, 3)">Delayed</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <small class="text-muted">@task.Project.Name</small>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <!-- Resource Allocation -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Resource Allocation</span>
+                <!-- Removed "Manage" link -->
+            </div>
+            <div class="card-body p-3">
+                @foreach (var resource in Model.Resources)
+                {
+                    <div class="resource-card">
+                        <div class="resource-avatar">@resource.Initials</div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <span>@resource.FullName</span>
+                                <div>
+                                    <span class="badge @(resource.AllocationPercentage > 100 ? "bg-danger" : 
+                                                     resource.AllocationPercentage >= 80 ? "bg-warning" : "bg-success")">
+                                        @(resource.AllocationPercentage > 100 ? "Overallocated" : 
+                                          resource.AllocationPercentage >= 80 ? "Near capacity" : "Available")
+                                    </span>
+                                    <!-- Removed edit button -->
+                                </div>
+                            </div>
+                            <div class="progress mt-1" style="height: 5px;">
+                                <div class="progress-bar @(resource.AllocationPercentage > 100 ? "bg-danger" : 
+                                                      resource.AllocationPercentage >= 80 ? "bg-warning" : "bg-success")" 
+                                     style="width: @(resource.AllocationPercentage)%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risk Management -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Risk Management</span>
+                <!-- Removed "Add Risk" link -->
+            </div>
+            <div class="card-body p-3">
+                @foreach (var risk in Model.Risks)
+                {    <div class="risk-item @(risk.Level == RiskLevel.High ? "risk-high" : risk.Level == RiskLevel.Medium ? "risk-medium" : "risk-low")" data-risk-id="@risk.Id">
+@*                    <div class="risk-item @(risk.Level == RiskLevel.High ? "risk-high" : risk.Level == RiskLevel.Medium ? "risk-medium" : "risk-low")">
+*@                        <div class="d-flex justify-content-between align-items-center">
+                            <span>@risk.Description</span>
+                             <div class="dropdown">
+                                <button class="badge dropdown-toggle @(risk.Level == RiskLevel.High ? "bg-danger" : 
+                                                                  risk.Level == RiskLevel.Medium ? "bg-warning" : "bg-success")" 
+                                        type="button" data-bs-toggle="dropdown">
+                                    @(risk.Level == RiskLevel.High ? "High" : 
+                                      risk.Level == RiskLevel.Medium ? "Medium" : "Low")
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="updateRiskLevel(@risk.Id, 0)">Low</a></li>
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="updateRiskLevel(@risk.Id, 1)">Medium</a></li>
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="updateRiskLevel(@risk.Id, 2)">High</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <small class="text-muted">@risk.Project.Name</small>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Project Status Chart - Make this a global variable
+        let statusChart;
+        
+        // Count projects by status
+        const onTrackCount = @Model.Projects.Count(p => p.Status == ProjectStatus.OnTrack);
+        const atRiskCount = @Model.Projects.Count(p => p.Status == ProjectStatus.AtRisk);
+        const delayedCount = @Model.Projects.Count(p => p.Status == ProjectStatus.Delayed);
+        
+        // Function to initialize or update chart
+        function initChart(onTrack, atRisk, delayed) {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            
+            if (statusChart) {
+                statusChart.destroy();
+            }
+            
+            statusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['On Track', 'At Risk', 'Delayed'],
+                    datasets: [{
+                        data: [onTrack, atRisk, delayed],
+                        backgroundColor: [
+                            '#28a745', // Green for On Track
+                            '#ffc107', // Yellow for At Risk
+                            '#dc3545'  // Red for Delayed
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize chart on page load
+        $(document).ready(function() {
+            // Initialize chart with all projects data
+            initChart(onTrackCount, atRiskCount, delayedCount);
+            
+            // Project filter dropdown functionality
+            $(".dropdown-item").click(function(e) {
+                e.preventDefault();
+                const projectName = $(this).text();
+                $("#dropdownMenuButton").text(projectName);
+                
+                if (projectName === "All Projects") {
+                    $(".project-item").show();
+                    // Reset chart to show all projects
+                    initChart(onTrackCount, atRiskCount, delayedCount);
+                } else {
+                    $(".project-item").hide();
+                    $(`.project-item:contains('${projectName}')`).show();
+                    
+                    // Find the selected project and update chart
+                    // You'll need to add server-side data or modify this to get status for specific project
+                    const selectedProject = @Html.Raw(Json.Serialize(Model.Projects))
+                        .find(p => p.Name === projectName);
+                    
+                    if (selectedProject) {
+                        const projectOnTrack = selectedProject.Status === 0 ? 1 : 0; // 0 = OnTrack
+                        const projectAtRisk = selectedProject.Status === 1 ? 1 : 0;  // 1 = AtRisk
+                        const projectDelayed = selectedProject.Status === 2 ? 1 : 0; // 2 = Delayed
+                        initChart(projectOnTrack, projectAtRisk, projectDelayed);
+                    }
+                }
+            });
+        });
+        
+        function updateTaskStatus(taskId, newStatus) {
+            $.ajax({
+                url: '@Url.Action("UpdateTaskStatus", "Tasks")',
+                type: 'POST',
+                data: { 
+                    id: taskId, 
+                    status: newStatus 
+                },
+                success: function(result) {
+                    if (result.success) {
+                        location.reload();
+                    } else {
+                        alert('Failed to update task status');
+                    }
+                }
+            });
+        }
+        
+        // Resource modal functionality
+        $('#resourceModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var resourceId = button.data('resource-id');
+            var resourceName = button.data('resource-name');
+            
+            var modal = $(this);
+            modal.find('#resourceId').val(resourceId);
+            modal.find('#resourceName').text(resourceName);
+        });
+        
+        $('#allocation').on('input', function() {
+            $('#allocationValue').text($(this).val() + '%');
+        });
+        
+        $('#saveResourceAllocation').click(function() {
+    // Create a form and submit it directly (no AJAX)
+    var form = $('<form action="@Url.Action("UpdateAllocation", "Resources")" method="post"></form>');
+    form.append('<input type="hidden" name="resourceId" value="' + $('#resourceId').val() + '">');
+    form.append('<input type="hidden" name="projectId" value="' + $('#projectId').val() + '">');
+    form.append('<input type="hidden" name="allocation" value="' + $('#allocation').val() + '">');
+    $('body').append(form);
+    form.submit();
+});
+        
+        function updateRiskLevel(riskId, newLevel) {
+            $.ajax({
+                url: '@Url.Action("UpdateRiskLevel", "Risks")',
+                type: 'POST',
+                data: { 
+                    id: riskId, 
+                    level: newLevel 
+                },
+
+                 success: function(result) {
+            if (result.success) {
+                // Refresh chart data instead of reloading page
+                refreshStatusChart();
+                // Update the risk level visually
+                updateRiskDisplay(riskId, newLevel);
+            } else {
+                alert('Failed to update risk level');
+            }
+        }
+            });
+        }
+
+        function refreshStatusChart() {
+    $.ajax({
+        url: '@Url.Action("GetProjectStatusData", "Dashboard")',
+        type: 'GET',
+        success: function(data) {
+            // Update chart with new data
+            initChart(data.onTrack, data.atRisk, data.delayed);
+        }
+    });
+}
+
+function updateRiskDisplay(riskId, newLevel) {
+        const riskItem = $(".risk-item[data-risk-id='" + riskId + "']");
+    
+    // Update badge class and text
+    const badge = riskItem.find(".badge");
+    badge.removeClass("bg-danger bg-warning bg-success");
+    
+    if (newLevel == 2) { // High
+        badge.addClass("bg-danger").text("High");
+        riskItem.removeClass("risk-low risk-medium").addClass("risk-high");
+    } else if (newLevel == 1) { // Medium
+        badge.addClass("bg-warning").text("Medium");
+        riskItem.removeClass("risk-low risk-high").addClass("risk-medium");
+    } else { // Low
+        badge.addClass("bg-success").text("Low");
+        riskItem.removeClass("risk-medium risk-high").addClass("risk-low");
+    }
+}
+    </script>
+
+    <!-- Add this at the bottom of your view -->
+    <div class="modal fade" id="resourceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Manage Resource Allocation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="resourceAllocationForm">
+                        <input type="hidden" id="resourceId" name="resourceId" />
+                        <div class="mb-3">
+                            <label class="form-label">Resource:</label>
+                            <span id="resourceName" class="fw-bold"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="projectId" class="form-label">Project</label>
+                            <select id="projectId" name="projectId" class="form-select">
+                                @foreach (var project in Model.Projects)
+                                {
+                                    <option value="@project.Id">@project.Name</option>
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="allocation" class="form-label">Allocation Percentage</label>
+                            <input type="range" class="form-range" id="allocation" name="allocation" 
+                                   min="10" max="100" step="10" value="50">
+                            <output id="allocationValue">50%</output>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveResourceAllocation">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

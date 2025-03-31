@@ -1,0 +1,33 @@
+﻿@model TechPMDashboard.Models.Risk
+@{
+    ViewData["Title"] = "Add Risk";
+}
+
+<div class="container">
+    <h2>Add New Risk</h2>
+    <form asp-controller="Risks" asp-action="Create" method="post">
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label">Description</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        </div>
+        
+        <div class="mb-3">
+            <label asp-for="Level" class="form-label">Risk Level</label>
+            <select asp-for="Level" class="form-select">
+                <option value="0">Low</option>
+                <option value="1">Medium</option>
+                <option value="2">High</option>
+            </select>
+        </div>
+        
+        <div class="mb-3">
+            <label asp-for="ProjectId" class="form-label">Project</label>
+            <select asp-for="ProjectId" asp-items="ViewBag.Projects" class="form-select"></select>
+        </div>
+        
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-controller="Dashboard" asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
